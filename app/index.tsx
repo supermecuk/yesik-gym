@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Modal, TextInput, FlatList, Dimensions } from 'react-native';
-import { GestureHandlerRootView , PanGestureHandler, State  } from 'react-native-gesture-handler';
+import { GestureHandlerRootView, PanGestureHandler, State } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import WorkoutBottomSheet from '@/components/WorkoutBottomSheet';
 import Calendar from '@/components/Calendar';
@@ -11,31 +11,31 @@ const { width: screenWidth } = Dimensions.get('window');
 export default function MainTab() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
-  const [workouts, setWorkouts] = useState<Record<string, string[]>>({});
+  const [workouts, setWorkouts] = useState<Record<string, { name: string; sets: { reps: string; weight: string }[] }[]>>({});
   const [expandedItemIndex, setExpandedItemIndex] = useState<number | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [sets, setSets] = useState<{ reps: string; weight: string }[]>([{ reps: '', weight: '' }]);
   const [isTimerModalVisible, setIsTimerModalVisible] = useState(false);
   const [timer, setTimer] = useState({ minutes: '00', seconds: '00' });
 
-   // Create refs for each item
-
+  // Create refs for each item
   const translateXRefs = useRef<{ [key: string]: Animated.Value }>({});
 
   const handleAddWorkout = (exercise: string) => {
     const currentDate = selectedDate.toDateString();
     const updatedWorkouts = [
       ...(workouts[currentDate] || []),
-      exercise || `Workout ${workouts[currentDate]?.length + 1}`,
+      { name: exercise || `Workout ${workouts[currentDate]?.length + 1}`, sets: [] },
     ];
     setWorkouts({ ...workouts, [currentDate]: updatedWorkouts });
     setIsSheetOpen(false);
   };
+
   const handleRemoveWorkout = (exercise: string) => {
     const currentDate = selectedDate.toDateString();
-    const updatedWorkouts = workouts[currentDate]?.filter((work) => work !== exercise) || [];
+    const updatedWorkouts = workouts[currentDate]?.filter((work) => work.name !== exercise) || [];
     setWorkouts({ ...workouts, [currentDate]: updatedWorkouts });
   };
+
   const handleOpenBottomSheet = () => {
     setIsSheetOpen(true);
   };
@@ -49,8 +49,18 @@ export default function MainTab() {
     setExpandedItemIndex(index === expandedItemIndex ? null : index);
   };
 
-  const handleAddSet = () => {
-    setSets([...sets, { reps: '', weight: '' }]);
+  const handleAddSet = (index: number) => {
+    const currentDate = selectedDate.toDateString();
+    const newWorkouts = [...(workouts[currentDate] || [])];
+    newWorkouts[index].sets.push({ reps: '', weight: '' });
+    setWorkouts({ ...workouts, [currentDate]: newWorkouts });
+  };
+
+  const handleSetChange = (index: number, setIndex: number, field: 'reps' | 'weight', value: string) => {
+    const currentDate = selectedDate.toDateString();
+    const newWorkouts = [...(workouts[currentDate] || [])];
+    newWorkouts[index].sets[setIndex][field] = value;
+    setWorkouts({ ...workouts, [currentDate]: newWorkouts });
   };
 
   const handleTimerClick = () => {
@@ -60,28 +70,31 @@ export default function MainTab() {
   const handleTimerChange = (field: 'minutes' | 'seconds', value: string) => {
     setTimer({ ...timer, [field]: value });
   };
-  const renderWorkoutItem = ({ item, index }: { item: string, index: number }) => {
+
+  const selectedExercises = (workouts[selectedDate.toDateString()] || []).map(workout => workout.name);
+
+  const renderWorkoutItem = ({ item, index }: { item: { name: string; sets: { reps: string; weight: string }[] }, index: number }) => {
     const isExpanded = expandedItemIndex === index;
 
     // Create a new ref for each item if it doesn't exist
-    if (!translateXRefs.current[item]) {
-      translateXRefs.current[item] = new Animated.Value(0);
+    if (!translateXRefs.current[item.name]) {
+      translateXRefs.current[item.name] = new Animated.Value(0);
     }
 
     const handleSwipeGesture = Animated.event(
-      [{ nativeEvent: { translationX: translateXRefs.current[item] } }],
+      [{ nativeEvent: { translationX: translateXRefs.current[item.name] } }],
       { useNativeDriver: true }
     );
 
     const handleSwipeEnd = ({ nativeEvent }: any) => {
       if (nativeEvent.translationX < -150) {
-        Animated.timing(translateXRefs.current[item], {
+        Animated.timing(translateXRefs.current[item.name], {
           toValue: -screenWidth,
           duration: 200,
           useNativeDriver: true,
-        }).start(() => handleRemoveWorkout(item));
+        }).start(() => handleRemoveWorkout(item.name));
       } else {
-        Animated.spring(translateXRefs.current[item], {
+        Animated.spring(translateXRefs.current[item.name], {
           toValue: 0,
           useNativeDriver: true,
         }).start();
@@ -94,45 +107,36 @@ export default function MainTab() {
         onHandlerStateChange={handleSwipeEnd}
         activeOffsetX={[-10, 10]}
       >
-        <Animated.View style={[ { transform: [{ translateX: translateXRefs.current[item] }] }]}>
+        <Animated.View style={[{ transform: [{ translateX: translateXRefs.current[item.name] }] }]}>
           <TouchableOpacity
             style={[styles.workoutItemContent, isExpanded && styles.expandedWorkoutItem]}
             onPress={() => handleExpandItem(index)}
           >
             <Ionicons name="barbell-outline" size={24} color="#000" />
-            <Text style={styles.workoutText}>{item}</Text>
+            <Text style={styles.workoutText}>{item.name}</Text>
             {isExpanded && (
-              <TouchableOpacity style={styles.addSetIcon} onPress={handleAddSet}>
+              <TouchableOpacity style={styles.addSetIcon} onPress={() => handleAddSet(index)}>
                 <Ionicons name="add-circle-outline" size={24} color="#1C1C1E" />
               </TouchableOpacity>
             )}
             {isExpanded && (
               <View style={styles.expandedContent}>
-                {sets.map((set, i) => (
+                {item.sets.map((set, i) => (
                   <View key={i} style={styles.setRow}>
-                  
                     <View style={styles.inputsContainer}>
                       <TextInput
                         style={styles.input}
                         placeholder="Reps"
                         value={set.reps}
                         keyboardType="numeric"
-                        onChangeText={(text) => {
-                          const newSets = [...sets];
-                          newSets[i].reps = text;
-                          setSets(newSets);
-                        }}
+                        onChangeText={(text) => handleSetChange(index, i, 'reps', text)}
                       />
                       <TextInput
                         style={styles.input}
                         placeholder="Weight (kg)"
                         value={set.weight}
                         keyboardType="numeric"
-                        onChangeText={(text) => {
-                          const newSets = [...sets];
-                          newSets[i].weight = text;
-                          setSets(newSets);
-                        }}
+                        onChangeText={(text) => handleSetChange(index, i, 'weight', text)}
                       />
                       <TouchableOpacity style={styles.timerButton} onPress={handleTimerClick}>
                         <Ionicons name="timer-outline" size={20} color="#1C1C1E" />
@@ -149,15 +153,12 @@ export default function MainTab() {
   };
 
   return (
-    <> 
+    <>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <Calendar onDateChange={(date) => setSelectedDate(date)} />
         <View style={styles.container}>
           {/* Main Workout Area */}
-          <View
-            style={styles.workoutContainer}
-            pointerEvents={isSheetOpen ? 'none' : 'auto'}
-          >
+          <View style={styles.workoutContainer} pointerEvents={isSheetOpen ? 'none' : 'auto'}>
             {workouts[selectedDate.toDateString()]?.length > 0 ? (
               <FlatList
                 data={workouts[selectedDate.toDateString()]}
@@ -170,16 +171,13 @@ export default function MainTab() {
             )}
           </View>
 
-          
-
           {/* Add Workout Button */}
           <TouchableOpacity style={styles.addButton} onPress={handleOpenBottomSheet}>
             <Text style={styles.addButtonText}>Add Workout</Text>
           </TouchableOpacity>
 
-            
- {/* Timer Modal */}
- <Modal visible={isTimerModalVisible} transparent animationType="slide">
+          {/* Timer Modal */}
+          <Modal visible={isTimerModalVisible} transparent animationType="slide">
             <View style={styles.timerModalContainer}>
               <View style={styles.timerModalContent}>
                 <TextInput
@@ -206,7 +204,6 @@ export default function MainTab() {
               </View>
             </View>
           </Modal>
-            
 
           {/* Settings Modal */}
           <Modal visible={isSettingsVisible} transparent animationType="slide">
@@ -227,13 +224,14 @@ export default function MainTab() {
             onClose={handleSheetClose}
             onAddWorkout={handleAddWorkout}
             onRemoveWorkout={handleRemoveWorkout}
+            selectedExercises={selectedExercises}
           />
         </View>
-        
       </GestureHandlerRootView>
     </>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -255,6 +253,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    marginVertical: 3
   },
   workoutItem: {
     flexDirection: 'row',

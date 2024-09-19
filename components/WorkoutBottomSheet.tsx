@@ -1,10 +1,9 @@
-// WorkoutBottomSheet.tsx
 import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, Dimensions } from 'react-native';
 import BottomSheet, { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { PanGestureHandler, GestureHandlerRootView, State } from 'react-native-gesture-handler';
-import { Ionicons } from '@expo/vector-icons'; // Assuming you're using Expo Icons
-import ExerciseCard from './ExerciseCard'; // Import the ExerciseCard component
+import { Ionicons } from '@expo/vector-icons';
+import ExerciseCard from './ExerciseCard';
 
 type MuscleGroup = 'Chest' | 'Arms' | 'Legs' | 'Back' | 'Shoulders' | 'Cardio';
 
@@ -12,16 +11,22 @@ interface WorkoutBottomSheetProps {
   isSheetOpen: boolean;
   onClose: () => void;
   onAddWorkout: (exercise: string) => void;
-  onRemoveWorkout: (exercise: string) => void; 
+  onRemoveWorkout: (exercise: string) => void;
+  selectedExercises: string[]; // Corrected type to string[]
 }
 
 const { height: screenHeight } = Dimensions.get('window');
 
-const WorkoutBottomSheet: React.FC<WorkoutBottomSheetProps> = ({ isSheetOpen, onClose, onAddWorkout,  onRemoveWorkout }) => {
+const WorkoutBottomSheet: React.FC<WorkoutBottomSheetProps> = ({
+  isSheetOpen,
+  onClose,
+  onAddWorkout,
+  onRemoveWorkout,
+  selectedExercises, // Added selectedExercises prop
+}) => {
   const [selectedOption, setSelectedOption] = useState<'Exercises' | 'Programs'>('Exercises');
   const [selectedMuscle, setSelectedMuscle] = useState<MuscleGroup | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedExercises, setSelectedExercises] = useState<string[]>([]); // State to track multiple selected exercises
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => [0.25 * screenHeight, 0.5 * screenHeight, screenHeight], [screenHeight]);
 
@@ -35,111 +40,32 @@ const WorkoutBottomSheet: React.FC<WorkoutBottomSheetProps> = ({ isSheetOpen, on
     { name: 'Shoulders', icon: 'man-outline' },
     { name: 'Cardio', icon: 'heart-outline' },
   ];
-  
+
   const programs = ['Program 1', 'Program 2', 'Program 3'];
   const exercises = {
-    Chest: [
-      'Bench Press',
-      'Chest Fly',
-      'Incline Bench Press',
-      'Decline Bench Press',
-      'Cable Crossover',
-      'Push-Up',
-      'Dumbbell Pullover',
-      'Pec Deck Machine',
-      'Incline Dumbbell Fly',
-      'Dips for Chest',
-    ],
-    Arms: [
-      'Bicep Curl',
-      'Tricep Extension',
-      'Hammer Curl',
-      'Skull Crusher',
-      'Preacher Curl',
-      'Tricep Dips',
-      'Concentration Curl',
-      'Tricep Kickback',
-      'Cable Curl',
-      'Overhead Tricep Extension',
-    ],
-    Legs: [
-      'Squat',
-      'Lunge',
-      'Leg Press',
-      'Leg Extension',
-      'Leg Curl',
-      'Calf Raise',
-      'Deadlift',
-      'Step-Up',
-      'Glute Bridge',
-      'Bulgarian Split Squat',
-    ],
-    Back: [
-      'Pull Up',
-      'Row',
-      'Deadlift',
-      'Lat Pulldown',
-      'Back Extension',
-      'T-Bar Row',
-      'Seated Cable Row',
-      'Bent Over Row',
-      'Single-Arm Dumbbell Row',
-      'Chin-Up',
-    ],
-    Shoulders: [
-      'Shoulder Press',
-      'Lateral Raise',
-      'Front Raise',
-      'Reverse Fly',
-      'Upright Row',
-      'Arnold Press',
-      'Shrugs',
-      'Face Pull',
-      'Single-Arm Dumbbell Press',
-      'Cable Lateral Raise',
-    ],
-    Cardio: [
-      'Running',
-      'Cycling',
-      'Jump Rope',
-      'Rowing',
-      'Swimming',
-      'Boxing',
-      'Burpees',
-      'Stair Climber',
-      'High Knees',
-      'Mountain Climbers',
-    ],
+    Chest: ['Bench Press', 'Chest Fly', 'Incline Bench Press', 'Decline Bench Press', 'Cable Crossover', 'Push-Up', 'Dumbbell Pullover', 'Pec Deck Machine', 'Incline Dumbbell Fly', 'Dips for Chest'],
+    Arms: ['Bicep Curl', 'Tricep Extension', 'Hammer Curl', 'Skull Crusher', 'Preacher Curl', 'Tricep Dips', 'Concentration Curl', 'Tricep Kickback', 'Cable Curl', 'Overhead Tricep Extension'],
+    Legs: ['Squat', 'Lunge', 'Leg Press', 'Leg Extension', 'Leg Curl', 'Calf Raise', 'Deadlift', 'Step-Up', 'Glute Bridge', 'Bulgarian Split Squat'],
+    Back: ['Pull Up', 'Row', 'Deadlift', 'Lat Pulldown', 'Back Extension', 'T-Bar Row', 'Seated Cable Row', 'Bent Over Row', 'Single-Arm Dumbbell Row', 'Chin-Up'],
+    Shoulders: ['Shoulder Press', 'Lateral Raise', 'Front Raise', 'Reverse Fly', 'Upright Row', 'Arnold Press', 'Shrugs', 'Face Pull', 'Single-Arm Dumbbell Press', 'Cable Lateral Raise'],
+    Cardio: ['Running', 'Cycling', 'Jump Rope', 'Rowing', 'Swimming', 'Boxing', 'Burpees', 'Stair Climber', 'High Knees', 'Mountain Climbers'],
   };
 
   const handleSelectOption = (option: 'Exercises' | 'Programs') => {
     setSelectedOption(option);
-    setSelectedMuscle(null); 
+    setSelectedMuscle(null); // Clear muscle selection when switching options
   };
 
   const handleSelectMuscle = (muscle: MuscleGroup) => {
     setSelectedMuscle(muscle);
   };
 
-  const handleSwipeBack = ({ nativeEvent }: any) => {
-    if (nativeEvent.state === State.END) {
-      if (nativeEvent.translationX > 50) {
-        setSelectedMuscle(null);
-      }
-    }
-  };
-
   const toggleExerciseSelect = (exercise: string) => {
     if (selectedExercises.includes(exercise)) {
-      setSelectedExercises(selectedExercises.filter((item) => item !== exercise)); // Unselect exercise
+      onRemoveWorkout(exercise);
     } else {
-      setSelectedExercises([...selectedExercises, exercise]); // Select exercise
-      onAddWorkout(exercise); // Call the onAddWorkout callback
+      onAddWorkout(exercise);
     }
-  };
-  const handleRemoveExercise = (exercise: string) => {
-    setSelectedExercises(selectedExercises.filter((item) => item !== exercise));
-    onRemoveWorkout(exercise)
   };
 
   const renderBackdrop = useCallback(
@@ -177,34 +103,22 @@ const WorkoutBottomSheet: React.FC<WorkoutBottomSheetProps> = ({ isSheetOpen, on
             />
           </View>
           <View style={styles.optionContainer}>
-            <TouchableOpacity 
-              onPress={() => handleSelectOption('Exercises')} 
-              style={[
-                styles.optionButton, 
-                selectedOption === 'Exercises' && styles.selectedOption
-              ]}
+            <TouchableOpacity
+              onPress={() => handleSelectOption('Exercises')}
+              style={[styles.optionButton, selectedOption === 'Exercises' && styles.selectedOption]}
             >
               <Text style={[styles.optionText, { color: selectedOption === 'Exercises' ? '#FFFFFF' : '#1C1C1E' }]}>Exercises</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={() => handleSelectOption('Programs')} 
-              style={[
-                styles.optionButton, 
-                selectedOption === 'Programs' && styles.selectedOption
-              ]}
+            <TouchableOpacity
+              onPress={() => handleSelectOption('Programs')}
+              style={[styles.optionButton, selectedOption === 'Programs' && styles.selectedOption]}
             >
               <Text style={[styles.optionText, { color: selectedOption === 'Programs' ? '#FFFFFF' : '#1C1C1E' }]}>Programs</Text>
             </TouchableOpacity>
           </View>
           <TouchableOpacity style={styles.addExerciseButton}>
-            <Ionicons 
-              name="add-circle-outline" 
-              size={20} 
-              color="#000" 
-            />
-            <Text style={styles.addExerciseText}>
-              {selectedOption === 'Exercises' ? 'Add New Exercise' : 'Add New Program'}
-            </Text>
+            <Ionicons name="add-circle-outline" size={20} color="#000" />
+            <Text style={styles.addExerciseText}>{selectedOption === 'Exercises' ? 'Add New Exercise' : 'Add New Program'}</Text>
           </TouchableOpacity>
         </View>
 
@@ -226,23 +140,21 @@ const WorkoutBottomSheet: React.FC<WorkoutBottomSheetProps> = ({ isSheetOpen, on
         )}
 
         {selectedOption === 'Exercises' && selectedMuscle && (
-          <PanGestureHandler onHandlerStateChange={handleSwipeBack}>
-            <FlatList
-              data={exercises[selectedMuscle as keyof typeof exercises]}
-              keyExtractor={(item) => item}
-              numColumns={2}
-              renderItem={({ item }) => (
-                <ExerciseCard
-                  exercise={item}
-                  isSelected={selectedExercises.includes(item)}
-                  onSelect={() => toggleExerciseSelect(item)}
-                  onUnselect={() => handleRemoveExercise(item)}
-                />
-              )}
-              columnWrapperStyle={{ justifyContent: 'space-between' }} // Adjust spacing between columns
-              showsVerticalScrollIndicator={false}
-            />
-          </PanGestureHandler>
+          <FlatList
+            data={exercises[selectedMuscle as keyof typeof exercises]}
+            keyExtractor={(item) => item}
+            numColumns={2}
+            renderItem={({ item }) => (
+              <ExerciseCard
+                exercise={item}
+                isSelected={selectedExercises.includes(item)} // Pass selected state
+                onSelect={() => toggleExerciseSelect(item)}
+                onUnselect={() => toggleExerciseSelect(item)}
+              />
+            )}
+            columnWrapperStyle={{ justifyContent: 'space-between' }}
+            showsVerticalScrollIndicator={false}
+          />
         )}
 
         {selectedOption === 'Programs' && (

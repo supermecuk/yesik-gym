@@ -1,4 +1,3 @@
-// ExerciseCard.tsx
 import React, { useState, useRef } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Animated, Modal, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,7 +9,7 @@ interface ExerciseCardProps {
   exercise: string;
   isSelected: boolean;
   onSelect: () => void;
-  onUnselect: () => void; // Add this new prop
+  onUnselect: () => void;
 }
 
 const ExerciseCard: React.FC<ExerciseCardProps> = ({ exercise, isSelected, onSelect, onUnselect }) => {
@@ -43,7 +42,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ exercise, isSelected, onSel
       <TouchableOpacity
         style={[
           styles.cardContainer,
-          isSelected && styles.selectedCardContainer,
+          isSelected && styles.selectedCardContainer, // Highlight if selected
         ]}
         onPress={() => (isSelected ? onUnselect() : onSelect())} // Toggle selection
       >
@@ -89,8 +88,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   selectedCardContainer: {
-    backgroundColor: '#000', 
-    
+    backgroundColor: '#000', // Highlight selected card
   },
   cardText: {
     fontSize: 16,
