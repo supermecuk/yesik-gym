@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, TouchableOpacity, Animated } from 'react-native
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { Easing } from 'react-native';
+import Settings from './Settings';
 
 const getWeekDates = (startDate: Date) => {
   const weekDates = [];
@@ -41,7 +42,17 @@ const getMonthDates = (year: number, month: number) => {
   return dates;
 };
 
-export default function Calendar ({ onDateChange }: { onDateChange: (date: Date) => void }) {
+export default function Calendar ({
+  onDateChange,
+  workouts,
+  saveWorkoutsToFirebase,
+  navigation
+}: {
+  onDateChange: (date: Date) => void;
+  workouts: any;
+  saveWorkoutsToFirebase: (workouts: any) => void;
+  navigation: any;
+}) {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [weekStart, setWeekStart] = useState(getInitialWeekStart(selectedDate));
   const [isExpanded, setIsExpanded] = useState(false);
@@ -181,7 +192,11 @@ export default function Calendar ({ onDateChange }: { onDateChange: (date: Date)
           {selectedDate.toLocaleString('default', { month: 'long' })} {selectedDate.getFullYear()}
         </Text>
         <TouchableOpacity onPress={() => { /* Settings action */ }}>
-          <Ionicons name="settings-outline" size={24} color="#1C1C1E" />
+        <Settings
+        workouts={workouts}
+        saveWorkoutsToFirebase={saveWorkoutsToFirebase}
+        navigation={navigation}
+      />
         </TouchableOpacity>
       </View>
 
